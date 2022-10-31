@@ -26,6 +26,7 @@
             }
         ],
         "no-await-in-loop": "off",
-        "no-continue": "off"
+        "no-continue": "off",
+        "eqeqeq": "off"
     }
 }

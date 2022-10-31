@@ -37,6 +37,7 @@ module.exports = async (event = {}) => {
     process.exit(0);
   }
   const analytics = new Analytics(process.env.SEGMENT_API_KEY);
+  const debug = process.env.DEBUG === 'true' || process.env.DEBUG === true;
 
   // retrieve all organizations
   try {
@@ -47,7 +48,7 @@ module.exports = async (event = {}) => {
     for (let j = 0; j < articles.length; j++) {
       const article = articles[j];
       const { data: analyticsData } = await axios
-        .get(`https://dev.to/api/analytics/historical?start=${date}&organization_id=${process.env.DEV_ORG_ID}&article_id=${article.id}`, {
+        .get(`https://dev.to/api/analytics/historical?start=${date}&end=${date}&organization_id=${process.env.DEV_ORG_ID}&article_id=${article.id}`, {
           headers: {
             'api-key': process.env.DEV_API_KEY,
           },
@@ -60,7 +61,7 @@ module.exports = async (event = {}) => {
         }
         console.log(`Pushing ${analyticsData[analyticsDate].page_views.total} views on ${analyticsDate} for for "${article.title}"...`);
         for (let i = 0; i < analyticsData[analyticsDate].page_views.total; i++) {
-          if ((!event || !event.testing) && !process.env.DEBUG) {
+          if ((!event || !event.testing) && !debug) {
             analytics.page({
               anonymousId: uniqid(),
               properties: {
