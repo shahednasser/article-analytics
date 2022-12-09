@@ -41,14 +41,21 @@ module.exports = async (event = {}) => {
 
   // retrieve all organizations
   try {
-    const { data: articles } = await axios.get(`https://dev.to/api/organizations/${process.env.DEV_ORG_NAME}/articles`);
+    const { data: articles } = await axios.get(`https://dev.to/api/organizations/${process.env.DEV_ORG_NAME}/articles?per_page=1000`);
     console.log(`Retrieved ${articles.length} articles`);
     // TODO this is for testing purposes. It should be changed to be just for the current day.
-    const date = moment().subtract(1, 'day').format('YYYY-MM-DD');
+    let startDate = moment(event?.startDate);
+    let endDate = event && event.endDate ? moment(event.endDate) : startDate.subtract(1, 'day');
+
+    // format dates
+    startDate = startDate.format('YYYY-MM-DD');
+    endDate = endDate.format('YYYY-MM-DD');
+
+    let totalPageViews = 0;
     for (let j = 0; j < articles.length; j++) {
       const article = articles[j];
       const { data: analyticsData } = await axios
-        .get(`https://dev.to/api/analytics/historical?start=${date}&end=${date}&organization_id=${process.env.DEV_ORG_ID}&article_id=${article.id}`, {
+        .get(`https://dev.to/api/analytics/historical?start=${startDate}&end=${endDate}&organization_id=${process.env.DEV_ORG_ID}&article_id=${article.id}`, {
           headers: {
             'api-key': process.env.DEV_API_KEY,
           },
@@ -59,6 +66,7 @@ module.exports = async (event = {}) => {
         if (analyticsData[analyticsDate].page_views.total === 0) {
           continue;
         }
+        totalPageViews += analyticsData[analyticsDate].page_views.total;
         console.log(`Pushing ${analyticsData[analyticsDate].page_views.total} views on ${analyticsDate} for for "${article.title}"...`);
         for (let i = 0; i < analyticsData[analyticsDate].page_views.total; i++) {
           if ((!event || !event.testing) && !debug) {
@@ -70,12 +78,13 @@ module.exports = async (event = {}) => {
                 url: article.url,
                 canonical_url: article.canonical_url,
               },
-              timestamp: moment(analyticsDate).toDate(),
+              timestamp: moment(analyticsDate).add(i, 'seconds').toDate(),
             });
           }
         }
       }
     }
+    console.log(`Pushed ${totalPageViews} in total.`);
   } catch (e) {
     console.error(e);
   }
