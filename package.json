@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node -e 'require(\"./index\").handler( )'"
+    "test": "node -e 'require(\"./index\").handler( )'",
+    "prepare": "rm -rf analytics.zip && zip -r analytics.zip ."
   },
   "keywords": [],
   "author": "",
